@@ -236,11 +236,8 @@
     // 战斗 / 结局 / 常规
     const events = Game.exec(raw);
 
-    if (events.length === 0) {
-      logEl.innerHTML = '';
-    } else {
-      render(events);
-    }
+    // 注意：不要因为「没有事件」就清空日志，那会让玩家误以为黑屏
+    if (events.length > 0) render(events);
 
     renderPanel();
     renderExits(Game.get());
@@ -449,7 +446,15 @@
         try { return localStorage.getItem('guixu.save.v1'); } catch (e) { return null; }
       })();
       const res = saved ? Game.resumeFrom(saved) : null;
-      if (!res) { startGame(false); return; }
+      if (!res) {
+        // 存档损坏或来自不兼容的旧版本：清掉，免得每次点「续前缘」都失败
+        if (saved) {
+          try { localStorage.removeItem('guixu.save.v1'); } catch (e) {}
+          $('#btnResume').hidden = true;
+        }
+        startGame(false);
+        return;
+      }
       logEl.innerHTML = '';
       render(res.events, true);
     } else {

@@ -1052,9 +1052,31 @@ window.Game = (function () {
   function restore(json) {
     try {
       const s = typeof json === 'string' ? JSON.parse(json) : json;
-      if (!s || !s.room) return false;
-      S = s;
+      if (!s || typeof s !== 'object' || !s.room || !D.rooms[s.room]) return false;
+      // 旧存档可能缺字段：以 newState 为底合并，再补齐容器
+      const defaults = newState(s.name || undefined);
+      S = Object.assign({}, defaults, s);
+      ['bag', 'flags', 'clues', 'talkIdx', 'visited', 'taken', 'cleared', 'mobState'].forEach((k) => {
+        if (!S[k] || typeof S[k] !== 'object' || Array.isArray(S[k])) S[k] = {};
+      });
+      if (!Array.isArray(S.learned) || !S.learned.length) S.learned = defaults.learned.slice();
+      S.learned = S.learned.filter((id) => D.skills && D.skills[id]);
+      if (!isFinite(S.hpMax) || S.hpMax <= 0) S.hpMax = 100;
+      if (!isFinite(S.mpMax) || S.mpMax < 0) S.mpMax = 40;
+      if (!isFinite(S.hp)) S.hp = S.hpMax;
+      if (!isFinite(S.mp)) S.mp = S.mpMax;
+      S.hp = Math.max(1, Math.min(S.hp, S.hpMax));
+      S.mp = Math.max(0, Math.min(S.mp, S.mpMax));
+      if (!isFinite(S.lv) || S.lv < 1) S.lv = 1;
+      if (!isFinite(S.exp) || S.exp < 0) S.exp = 0;
+      if (!isFinite(S.money) || S.money < 0) S.money = 0;
+      if (!isFinite(S.steps) || S.steps < 0) S.steps = 0;
+      if (S.weapon && !D.items[S.weapon]) S.weapon = null;
+      if (S.armor && !D.items[S.armor]) S.armor = null;
       S.combat = null;
+      S.buff = null;
+      S.finale = !!S.finale;
+      S.ended = S.ended || null;
       out = [];
       return true;
     } catch (e) { return false; }
