@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>归墟 · 拾遗人纪事</title>
+<meta name="description" content="一个中式志怪风格的文字 MUD：长夜渡、乌斯村、古墓地宫。纯前端、零依赖，双击即玩。">
+<meta name="theme-color" content="#060907">
+<meta property="og:type" content="website">
+<meta property="og:title" content="归墟 · 拾遗人纪事">
+<meta property="og:description" content="一个中式志怪风格的文字 MUD。三十年前，江南有个村子叫乌斯，一夜之间死绝了。">
+<meta property="og:image" content="screenshots/play.jpg">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="jade">
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-vignette" aria-hidden="true"></div>
+<div class="scanlines" aria-hidden="true"></div>
+
+<div id="app">
+
+  <!-- ══════════ 顶栏 ══════════ -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">归</span>
+      <span class="brand-text">
+        <b>归 墟</b>
+        <i>拾遗人纪事 · 卷一</i>
+      </span>
+    </div>
+
+    <div class="topbar-mid" id="topMid">
+      <span class="chip" id="chipChime">亥时三刻</span>
+      <span class="chip" id="chipRoom">长夜渡</span>
+    </div>
+
+    <div class="topbar-tools">
+      <button class="tbtn" id="btnHelp" title="帮助 (help)">帮助</button>
+      <button class="tbtn" id="btnMap" title="舆图 (map)">舆图</button>
+      <button class="tbtn" id="btnTheme" title="切换灯色">灯色</button>
+      <button class="tbtn" id="btnSound" title="环境音" aria-pressed="false">静音</button>
+    </div>
+  </header>
+
+  <!-- ══════════ 主区 ══════════ -->
+  <main id="main">
+
+    <!-- 叙事舞台 -->
+    <section id="stage">
+      <div id="log" role="log" aria-live="polite" aria-atomic="false"></div>
+
+      <div id="exits-bar" class="exits-bar" aria-live="polite"></div>
+
+      <form id="promptWrap" autocomplete="off">
+        <span class="prompt-sigil">›</span>
+        <input id="cmd" type="text" inputmode="text"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               placeholder="在此写下你要做的事……（输入 help 求助）"
+               aria-label="命令输入">
+        <span class="caret" aria-hidden="true"></span>
+      </form>
+    </section>
+
+    <!-- 侧栏 -->
+    <aside id="side">
+
+      <section class="panel" id="panel-hero">
+        <div class="panel-head"><span>行 者</span><em id="heroTitle">凡人</em></div>
+        <div class="hero-name" id="heroName">谢九</div>
+        <div class="meters">
+          <div class="meter" data-k="hp">
+            <label>气血</label>
+            <div class="track"><i id="hpFill"></i></div>
+            <span id="hpTxt">0/0</span>
+          </div>
+          <div class="meter" data-k="mp">
+            <label>真气</label>
+            <div class="track"><i id="mpFill"></i></div>
+            <span id="mpTxt">0/0</span>
+          </div>
+          <div class="meter" data-k="exp">
+            <label>修为</label>
+            <div class="track"><i id="expFill"></i></div>
+            <span id="expTxt">0/0</span>
+          </div>
+        </div>
+        <div class="stats" id="statsRow"></div>
+      </section>
+
+      <section class="panel" id="panel-gear">
+        <div class="panel-head"><span>装 备</span><em id="coinTxt">0 文</em></div>
+        <div class="gear-row"><label>兵刃</label><span id="gearWeapon">—</span></div>
+        <div class="gear-row"><label>护身</label><span id="gearArmor">—</span></div>
+      </section>
+
+      <section class="panel" id="panel-bag">
+        <div class="panel-head"><span>行 囊</span><em id="bagCount">0</em></div>
+        <ul id="bagList" class="bag-list"></ul>
+      </section>
+
+      <section class="panel" id="panel-map">
+        <div class="panel-head"><span>舆 图</span><em id="mapHint">未识</em></div>
+        <pre id="miniMap" class="mini-map"></pre>
+      </section>
+
+      <section class="panel" id="panel-quest">
+        <div class="panel-head"><span>心 事</span></div>
+        <ul id="questList" class="quest-list"></ul>
+      </section>
+
+    </aside>
+  </main>
+
+  <footer id="statusbar">
+    <span id="sbHint">方向 n/s/e/w/u/d 或 北/南/东/西/上/下</span>
+    <span class="sb-right">
+      <button class="tbtn small" id="btnSave">存档</button>
+      <button class="tbtn small" id="btnLoad">读档</button>
+      <button class="tbtn small" id="btnWipe" title="清除本机存档">焚稿</button>
+    </span>
+  </footer>
+</div>
+
+<!-- 开场幕布 -->
+<div id="curtain">
+  <div class="curtain-inner">
+    <h1>归 墟</h1>
+    <p class="sub">拾遗人纪事 · 卷一</p>
+    <hr>
+    <p class="flavor">
+      三十年前，江南有个村子叫乌斯，一夜之间死绝了。<br>
+      官府说是疫，卷宗上只留了一行字：<br>
+      <b>「查无活口。」</b>
+    </p>
+    <p class="flavor dim">
+      如今有人给你一封没有落款的信，和半枚铜钱。<br>
+      要你去那里，找一件不该被找回来的东西。
+    </p>
+    <div class="curtain-btns">
+      <button id="btnStart" class="big-btn">推 门 而 入</button>
+      <button id="btnResume" class="big-btn ghost" hidden>续 前 缘</button>
+    </div>
+    <p class="tip">建议全屏 · 支持方向键翻查历史命令</p>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
